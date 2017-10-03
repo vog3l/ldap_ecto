@@ -56,20 +56,24 @@ defmodule Ldap.Ecto.Adapter do
 #  @type autogenerate_id
 #    :: {field :: atom, type :: :id | :binary_id, value :: term} | nil
 
-#  @typep repo :: Ecto.Repo.t
+  @typep repo :: Ecto.Repo.t
 
-#  @typep options :: Keyword.t
+  @typep options :: Keyword.t
 
 
 # CALLBACKS
 
   @behaviour Ecto.Adapter
 
+  alias Ldap.Ecto
+  alias Ldap.Ecto.{Adapter, Migration, Storage, Structure, Transaction}
+
   # Ecto.Adapter.__before_compile__/1
   # @spec __before_compile__(term, env :: Macro.Env.t) :: Macro.t # <- extra term in docs?
   # @spec __before_compile__(env :: Macro.Env.t) :: Macro.t
-  defmacro __before_compile__(_env) do
-
+  defmacro __before_compile__(env) do
+#    module = env.module
+#    config = Module.get_attribute(module, :config)
   end
 
   # Ecto.Adapter.autogenerate/1
@@ -86,7 +90,16 @@ defmodule Ldap.Ecto.Adapter do
   @spec child_spec(repo, options)
     :: :supervisor.child_spec
 
-  def child_spec(_repo, _options) do
+  def child_spec(repo, options) do
+    Supervisor.Spec.worker(Ldap.Ecto, [repo, options], name: Ldap.Ecto)
+  end
+
+  # Ecto.Adapter.ensure_all_started/2
+  @spec ensure_all_started(repo, type :: :application.restart_type)
+    ::  {:ok, [atom]} |
+        {:error, atom}
+
+  def ensure_all_started(_repo, _restart_type) do
 
   end
 
@@ -106,15 +119,6 @@ defmodule Ldap.Ecto.Adapter do
     :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
 
   def dumpers(_primitive_type, _ecto_type) do
-
-  end
-
-  # Ecto.Adapter.ensure_all_started/2
-  @spec ensure_all_started(repo, type :: :application.restart_type)
-    ::  {:ok, [atom]} |
-        {:error, atom}
-
-  def ensure_all_started(_repo, _restart_type) do
 
   end
 
