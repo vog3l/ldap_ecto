@@ -71,6 +71,10 @@ defmodule Ldap.Ecto.Helper do
 
   def generate_models(row, process, [{:&, [], [_idx, _columns, _count]}] = fields), do:
     Enum.map(fields, fn field -> process.(field, row, nil) end)
+  def generate_models(row, process, [{_,_,fields}]), do:
+    Enum.map(fields, fn {field, _} -> process.(field, row, nil) end)
+#  def generate_models(row, process, fields) when is_list(fields), do:
+#    Enum.map(fields, fn field -> process.(field, row, nil) end)
   def generate_models([field_data | data], process, [{{:., [], [{:&, [], [0]}, _field_name]}, [ecto_type: _type], []} = field | remaining_fields]), do:
     generate_models(data, process, remaining_fields, [process.(field, field_data, nil)])
   def generate_models([field_data | data], process, [field | remaining_fields], mapped_data), do:
@@ -78,14 +82,6 @@ defmodule Ldap.Ecto.Helper do
   def generate_models([], _process, [], mapped_data), do:
     :lists.reverse(mapped_data)
 
-
-  defp extract_select({:&, _, [_, select, _]}), do: select
-  defp extract_select({{:., _, [{:&, _, _}, select]}, _, _}), do: select
-
-  defp ordered_fields(sources) do
-    {_, model} = elem(sources, 0)
-    model.__schema__(:fields)
-  end
 
   @spec trim_converted(any) :: any
   def trim_converted(list) when is_list(list), do: hd(list)
@@ -98,6 +94,27 @@ defmodule Ldap.Ecto.Helper do
     end))
   end
 
+  def prune_attrs(attrs, all_fields, [{{:&, [], [0]}, _}] = _selected_fields) do
+    for field <- all_fields, do: Keyword.get(attrs, field)
+  end
+  def prune_attrs(attrs, _all_fields, selected_fields) do
+    selected_fields
+    |> Enum.map(fn {[{:&, [], _}, field], _} ->
+      Keyword.get(attrs, field)
+      end)
+  end
+
+
+  def ordered_fields(sources) do
+    {_, model} = elem(sources, 0)
+    model.__schema__(:fields)
+  end
+
+  def count_fields(fields, sources) when is_list(fields), do: fields |> Enum.map(fn field -> count_fields(field, sources) end) |> List.flatten
+  def count_fields({{_, _, fields}, _, _}, sources), do: fields |> extract_field_info(sources)
+  def count_fields({:&, _, [_idx]} = field, sources), do: extract_field_info(field, sources)
+  def count_fields({_, _, fields} , sources), do: fields |> extract_field_info(sources)
+  def count_fields({field, _}, sources), do: extract_field_info(field, sources)
 
   def merge_search_options({filter, []}, full_search_terms) do
     full_search_terms
@@ -135,5 +152,17 @@ defmodule Ldap.Ecto.Helper do
     {{conjunction, l}, dns}
   end
   def replace_dn_filters(other), do: {other, []}
+
+
+  defp extract_select({:&, _, [_, select, _]}), do: select
+  defp extract_select({{:., _, [{:&, _, _}, select]}, _, _}), do: select
+
+  defp extract_field_info({:&, _, [idx]} = field, sources) do
+    {_source, model} = elem(sources, idx)
+    [{field, length(model.__schema__(:fields))}]
+  end
+  defp extract_field_info(field, _sources) do
+    [{field, 0}]
+  end
 
 end

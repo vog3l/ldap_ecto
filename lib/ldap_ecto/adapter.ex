@@ -149,8 +149,8 @@ defmodule Ldap.Ecto.Adapter do
       |> Helper.merge_search_options(prepared)
       |> Ldap.Ecto.search
 
-  #    fields = ordered_fields(query_meta.sources)
-  #    count = count_fields(query_meta.select, query_meta.sources)
+      fields = Helper.ordered_fields(query_meta.sources)
+      count = Helper.count_fields(query_meta.select.preprocess, query_meta.sources)
 
       {:ok, {:eldap_search_result, results, []}} = search_response
 
@@ -158,11 +158,11 @@ defmodule Ldap.Ecto.Adapter do
         for entry <- results do
           entry
           |> Helper.process_entry
-  #        |> prune_attributes(fields, count)
-          |> Helper.generate_models(process, query_meta.fields)
+  #        |> Helper.prune_attrs(fields, count)
+          |> Helper.generate_models(process, query_meta.select.preprocess)
         end
 
-        {result_set}
+      {count, result_set}
   end
 
 
@@ -211,8 +211,8 @@ defmodule Ldap.Ecto.Adapter do
         Helper.construct_scope(query),
         Helper.construct_attributes(query),
       ]
-  #    |> Enum.map(&(apply(__MODULE__, &1, [query])))
-  #    |> Enum.filter(&(&1))
+  #    |> Enum.map(&(apply(Ldap.Ecto, &1, [query])))
+      |> Enum.filter(&(&1))
 
       {:nocache, query_meta}
   end
