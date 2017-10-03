@@ -45,32 +45,32 @@ defmodule Ldap.Ecto do
 
   def handle_call({:search, search_options}, _from, opts) do
     {:ok, handle}   = ldap_connect(opts)
-    search_response = ldap_api(opts).search(handle, search_options)
-    ldap_api(opts).close(handle)
+    search_response = :eldap.search(handle, search_options)
+    :eldap.close(handle)
 
     {:reply, search_response, opts}
   end
 
   def handle_call({:insert, dn, attrs}, _from, opts) do
     {:ok, handle}   = ldap_connect(opts)
-    insert_response = ldap_api(opts).add(handle, dn, attrs)
-    ldap_api(opts).close(handle)
+    insert_response = :eldap.add(handle, dn, attrs)
+    :eldap.close(handle)
 
     {:reply, insert_response, opts}
   end
 
   def handle_call({:update, dn, modify_operations}, _from, opts) do
     {:ok, handle}   = ldap_connect(opts)
-    update_response = ldap_api(opts).modify(handle, dn, modify_operations)
-    ldap_api(opts).close(handle)
+    update_response = :eldap.modify(handle, dn, modify_operations)
+    :eldap.close(handle)
 
     {:reply, update_response, opts}
   end
 
   def handle_call({:delete, dn}, _from, opts) do
     {:ok, handle}   = ldap_connect(opts)
-    delete_response = ldap_api(opts).delete(handle, dn)
-    ldap_api(opts).close(handle)
+    delete_response = :eldap.delete(handle, dn)
+    :eldap.close(handle)
 
     {:reply, delete_response, opts}
   end
@@ -78,11 +78,6 @@ defmodule Ldap.Ecto do
   ####
   # Private
   ##
-
-  @spec ldap_api([{atom, any}]) :: :eldap | module
-  defp ldap_api(opts) do
-    Keyword.get(opts, :ldap_api, :eldap)
-  end
 
   @spec ldap_connect([{atom, any}]) :: {:ok, pid}
   defp ldap_connect(opts) do
@@ -92,8 +87,8 @@ defmodule Ldap.Ecto do
     port      = Keyword.get(opts, :port, 636)
     use_ssl   = Keyword.get(opts, :ssl, true)
 
-    {:ok, handle} = ldap_api(opts).open([hostname], [{:port, port}, {:ssl, use_ssl}])
-    ldap_api(opts).simple_bind(handle, user_dn, password)
+    {:ok, handle} = :eldap.open([hostname], [{:port, port}, {:ssl, use_ssl}])
+    :eldap.simple_bind(handle, user_dn, password)
     {:ok, handle}
   end
 
