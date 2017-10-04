@@ -61,10 +61,10 @@ defmodule Ldap.Ecto.Helper do
     { :attributes, attrs }
   end
 
-  def process_entry({:eldap_entry, dn, attributes}) when is_list(attributes) do
+  def process_entry({:eldap_entry, dn, attrs}) when is_list(attrs) do
   List.flatten(
     [dn: dn],
-    Enum.map(attributes, fn {key, value} ->
+    Enum.map(attrs, fn {key, value} ->
       {key |> to_string |> String.to_atom, value}
     end))
   end
@@ -106,6 +106,8 @@ defmodule Ldap.Ecto.Helper do
       search_options
       |> Keyword.get(:filter)
       |> replace_dn_filters
+
+    abx = 7
     {filter, dns |> List.flatten |> Enum.uniq}
   end
 
@@ -123,6 +125,20 @@ defmodule Ldap.Ecto.Helper do
     {{conjunction, l}, dns}
   end
   def replace_dn_filters(other), do: {other, []}
+
+
+  def generate_modify_operation(attr, nil, _) do
+    :eldap.mod_replace(Converter.to_erlang(attr), [])
+  end
+  def generate_modify_operation(attr, [], {:array, _}) do
+    :eldap.mod_replace(Converter.to_erlang(attr), [])
+  end
+  def generate_modify_operation(attr, value, {:array, _}) do
+    :eldap.mod_replace(Converter.to_erlang(attr), value)
+  end
+  def generate_modify_operation(attr, value, _) do
+    :eldap.mod_replace(Converter.to_erlang(attr), [value])
+  end
 
   defp extract_select({{_, _, [{:&, _, _}, select]}, _, _}), do: select
 

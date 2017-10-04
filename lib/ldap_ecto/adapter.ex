@@ -61,12 +61,13 @@ defmodule Ldap.Ecto.Adapter do
   @typep options :: Keyword.t
 
 
-# CALLBACKS
+  # CALLBACKS
 
   @behaviour Ecto.Adapter
 
   alias Ldap.Ecto
   alias Ldap.Ecto.{Adapter, Helper, Converter}
+
 
   # Ecto.Adapter.__before_compile__/1
   # @spec __before_compile__(term, env :: Macro.Env.t) :: Macro.t # <- extra term in docs?
@@ -75,6 +76,7 @@ defmodule Ldap.Ecto.Adapter do
 #    module = env.module
 #    config = Module.get_attribute(module, :config)
   end
+
 
   # Ecto.Adapter.autogenerate/1
   @spec autogenerate(field_type :: :id | :binary_id | :embed_id)
@@ -86,6 +88,7 @@ defmodule Ldap.Ecto.Adapter do
     nil
   end
 
+
   # Ecto.Adapter.child_spec/2
   @spec child_spec(repo, options)
     :: :supervisor.child_spec
@@ -93,6 +96,7 @@ defmodule Ldap.Ecto.Adapter do
   def child_spec(repo, options) do
     Supervisor.Spec.worker(Ldap.Ecto, [repo, options], name: Ldap.Ecto)
   end
+
 
   # Ecto.Adapter.ensure_all_started/2
   @spec ensure_all_started(repo, type :: :application.restart_type)
@@ -103,30 +107,6 @@ defmodule Ldap.Ecto.Adapter do
     {:ok, []}
   end
 
-  # Ecto.Adapter.loaders/2
-  @spec loaders(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
-    :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
-
-  def loaders(:id, type), do: [type]
-  def loaders(:string, _type), do: [&Helper.load_string/1]
-  def loaders(:binary, _type), do: [&Helper.load_string/1]
-  def loaders(:datetime, _type), do: [&Helper.load_date/1]
-  def loaders(Ecto.DateTime, _type), do: [&Helper.load_date/1]
-  def loaders({:array, :string}, _type), do: [&Helper.load_array/1]
-  def loaders(_primitive, nil), do: [nil]
-  def loaders(_primitive, type), do: [type]
-
-  # Ecto.Adapter.dumpers/2
-  @spec dumpers(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
-    :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
-
-  def dumpers(_, nil), do: {:ok, nil}
-  def dumpers({:in, _type}, {:in, _}), do: [&Helper.dump_in/1]
-  def dumpers(:string, _type), do: [&Helper.dump_string/1]
-  def dumpers({:array, :string}, _type), do: [&Helper.dump_array/1]
-  def dumpers(:datetime, _type), do: [&Helper.dump_date/1]
-  def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
-  def dumpers(_primitive, type), do: [type]
 
   # Ecto.Adapter.prepare/2
   @spec prepare(atom :: :all | :update_all | :delete_all, query :: Ecto.Query.t)
@@ -148,6 +128,7 @@ defmodule Ldap.Ecto.Adapter do
 
   def prepare(:update_all, query), do: raise "Update is currently unsupported"
   def prepare(:delete_all, query), do: raise "Delete is currently unsupported"
+
 
   # Ecto.Adapter.execute/6
   @spec execute(repo, query_meta, query, params :: list, process | nil, options)
@@ -211,6 +192,7 @@ defmodule Ldap.Ecto.Adapter do
 
   end
 
+
   # Ecto.Adapter.update/6
   @spec update(repo, schema_meta, fields, filters, returning, options)
     ::  {:ok, fields} |
@@ -218,9 +200,23 @@ defmodule Ldap.Ecto.Adapter do
         {:error, :stale} |
         no_return
 
-  def update(_repo, _schema_meta, _fields, _filters, _returning, _options) do
+  def update(_repo, schema_meta, fields, filters, _returning, _options) do
+    dn = Keyword.get(filters, :dn)
 
+    modify_operations =
+      for {attribute, value} <- fields do
+        type = schema_meta.schema.__schema__(:type, attribute)
+        Helper.generate_modify_operation(attribute, value, type)
+      end
+
+    case Ldap.Ecto.update(dn, modify_operations) do
+      :ok ->
+        {:ok, []}
+      {:error, reason} ->
+        {:invalid, [reason]}
+    end
   end
+
 
   # Ecto.Adapter.delete/4
   @spec delete(repo, schema_meta, filters, options)
@@ -229,7 +225,42 @@ defmodule Ldap.Ecto.Adapter do
         {:error, :stale} |
         no_return
 
-  def delete(_repo, _schema_meta, _filters, _options) do
+  def delete(_repo, _schema_meta, filters, _options) do
+    dn = Keyword.get(filters, :dn)
 
+    case Ldap.Ecto.delete(dn) do
+      :ok ->
+        {:ok, []}
+      {:error, reason} ->
+        {:invalid, [reason]}
+    end
   end
+
+
+  # Ecto.Adapter.loaders/2
+  @spec loaders(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
+    :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
+
+  def loaders(:id, type), do: [type]
+  def loaders(:string, _type), do: [&Helper.load_string/1]
+  def loaders(:binary, _type), do: [&Helper.load_string/1]
+  def loaders(:datetime, _type), do: [&Helper.load_date/1]
+  def loaders(Ecto.DateTime, _type), do: [&Helper.load_date/1]
+  def loaders({:array, :string}, _type), do: [&Helper.load_array/1]
+  def loaders(_primitive, nil), do: [nil]
+  def loaders(_primitive, type), do: [type]
+
+
+  # Ecto.Adapter.dumpers/2
+  @spec dumpers(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
+    :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
+
+  def dumpers(_, nil), do: {:ok, nil}
+  def dumpers({:in, _type}, {:in, _}), do: [&Helper.dump_in/1]
+  def dumpers(:string, _type), do: [&Helper.dump_string/1]
+  def dumpers({:array, :string}, _type), do: [&Helper.dump_array/1]
+  def dumpers(:datetime, _type), do: [&Helper.dump_date/1]
+  def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
+  def dumpers(_primitive, type), do: [type]
+
 end
