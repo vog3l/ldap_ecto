@@ -100,20 +100,21 @@ defmodule Ldap.Ecto.Adapter do
         {:error, atom}
 
   def ensure_all_started(_repo, _restart_type) do
-#    Ldap.Ecto.start_link
     {:ok, []}
   end
 
-  # Ecto.Adapter.delete/4
-  @spec delete(repo, schema_meta, filters, options)
-    ::  {:ok, fields} |
-        {:invalid, constraints} |
-        {:error, :stale} |
-        no_return
+  # Ecto.Adapter.loaders/2
+  @spec loaders(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
+    :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
 
-  def delete(_repo, _schema_meta, _filters, _options) do
-
-  end
+  def loaders(:id, type), do: [type]
+  def loaders(:string, _type), do: [&Helper.load_string/1]
+  def loaders(:binary, _type), do: [&Helper.load_string/1]
+  def loaders(:datetime, _type), do: [&Helper.load_date/1]
+  def loaders(Ecto.DateTime, _type), do: [&Helper.load_date/1]
+  def loaders({:array, :string}, _type), do: [&Helper.load_array/1]
+  def loaders(_primitive, nil), do: [nil]
+  def loaders(_primitive, type), do: [type]
 
   # Ecto.Adapter.dumpers/2
   @spec dumpers(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
@@ -127,6 +128,27 @@ defmodule Ldap.Ecto.Adapter do
   def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
   def dumpers(_primitive, type), do: [type]
 
+  # Ecto.Adapter.prepare/2
+  @spec prepare(atom :: :all | :update_all | :delete_all, query :: Ecto.Query.t)
+    ::  {:cache, prepared} |
+        {:nocache, prepared}
+
+  def prepare(:all, query) do
+    prepared_query =
+      [
+        Helper.construct_filter(query),
+        Helper.construct_base(query),
+        Helper.construct_scope(query),
+        Helper.construct_attributes(query),
+      ]
+      |> Enum.filter(&(&1))
+
+    {:nocache, prepared_query}
+  end
+
+  def prepare(:update_all, query), do: raise "Update is currently unsupported"
+  def prepare(:delete_all, query), do: raise "Delete is currently unsupported"
+
   # Ecto.Adapter.execute/6
   @spec execute(repo, query_meta, query, params :: list, process | nil, options)
     :: result
@@ -137,32 +159,36 @@ defmodule Ldap.Ecto.Adapter do
         {:cached, (prepared -> :ok), cached} |
         {:cache, (cached -> :ok), prepared}
 
-  def execute(_repo, query_meta, {:nocache, prepared}, params, process, options) do
-    {:filter, filter} = Helper.construct_filter(Keyword.get(prepared, :filter), params)
-    options_filter = :eldap.and(Converter.options_to_filter(options))
-    full_filter = :eldap.and([filter, options_filter])
+  def execute(_repo, query_meta, {:nocache, prepared_query}, params, process, options) do
+    options_filter =
+      if Keyword.get(prepared_query, :filter) == [] do
+        :eldap.and(Converter.options_to_filter(options))
+      else
+        {:filter, filter} = Helper.construct_filter(Keyword.get(prepared_query, :filter), params)
+        filter
+      end
 
     search_response =
-      prepared
+      prepared_query
       |> Keyword.put(:filter, options_filter)
       |> Helper.replace_dn_search_with_objectclass_present
-      |> Helper.merge_search_options(prepared)
+      |> Helper.merge_search_options(prepared_query)
       |> Ldap.Ecto.search
 
-      fields = Helper.ordered_fields(query_meta.sources)
-      count = Helper.count_fields(query_meta.select.preprocess, query_meta.sources)
+    {:ok, {:eldap_search_result, results, []}} = search_response
 
-      {:ok, {:eldap_search_result, results, []}} = search_response
+    fields = Helper.ordered_fields(query_meta.sources)
+    count = Helper.count_fields(query_meta.select.preprocess)
 
-      result_set =
-        for entry <- results do
-          entry
-          |> Helper.process_entry
-  #        |> Helper.prune_attrs(fields, count)
-          |> Helper.generate_models(process, query_meta.select.preprocess)
-        end
+    result_set =
+      for entry <- results do
+        entry
+        |> Helper.process_entry
+        |> Helper.prune_attrs(fields)
+        |> Helper.generate_models(process, query_meta.select.preprocess)
+      end
 
-      {count, result_set}
+    {count, result_set}
   end
 
 
@@ -185,41 +211,6 @@ defmodule Ldap.Ecto.Adapter do
 
   end
 
-  # Ecto.Adapter.loaders/2
-  @spec loaders(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
-    :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
-
-  def loaders(:id, type), do: [type]
-  def loaders(:string, _type), do: [&Helper.load_string/1]
-  def loaders(:binary, _type), do: [&Helper.load_string/1]
-  def loaders(:datetime, _type), do: [&Helper.load_date/1]
-  def loaders(Ecto.DateTime, _type), do: [&Helper.load_date/1]
-  def loaders({:array, :string}, _type), do: [&Helper.load_array/1]
-  def loaders(_primitive, nil), do: [nil]
-  def loaders(_primitive, type), do: [type]
-
-  # Ecto.Adapter.prepare/2
-  @spec prepare(atom :: :all | :update_all | :delete_all, query :: Ecto.Query.t)
-    ::  {:cache, prepared} |
-        {:nocache, prepared}
-
-  def prepare(:all, query) do
-    query_meta =
-      [
-        Helper.construct_filter(query),
-        Helper.construct_base(query),
-        Helper.construct_scope(query),
-        Helper.construct_attributes(query),
-      ]
-  #    |> Enum.map(&(apply(Ldap.Ecto, &1, [query])))
-      |> Enum.filter(&(&1))
-
-      {:nocache, query_meta}
-  end
-
-  def prepare(:update_all, query), do: raise "Update is currently unsupported"
-  def prepare(:delete_all, query), do: raise "Delete is currently unsupported"
-
   # Ecto.Adapter.update/6
   @spec update(repo, schema_meta, fields, filters, returning, options)
     ::  {:ok, fields} |
@@ -231,4 +222,14 @@ defmodule Ldap.Ecto.Adapter do
 
   end
 
+  # Ecto.Adapter.delete/4
+  @spec delete(repo, schema_meta, filters, options)
+    ::  {:ok, fields} |
+        {:invalid, constraints} |
+        {:error, :stale} |
+        no_return
+
+  def delete(_repo, _schema_meta, _filters, _options) do
+
+  end
 end
