@@ -3,6 +3,7 @@ defmodule Ldap.Ecto.Helper do
   alias Ldap.Ecto.Converter
 
   def load_string(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
+#  def load_integer(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
   def load_array(array) do
     hallo = Enum.map(array, Converter.from_erlang(array))
     {:ok, hallo}
@@ -15,8 +16,9 @@ defmodule Ldap.Ecto.Helper do
   end
 
   def dump_in(value), do: {:ok, {:in, Converter.to_erlang(value)}}
+#  def dump_integer(value), do: {:ok, Converter.to_erlang(value)}
   def dump_string(value), do: {:ok, Converter.to_erlang(value)}
-  def dump_array(array) when is_list(array), do: {:ok, Converter.to_erlang(array)}
+  def dump_array(value) when is_list(value), do: {:ok, Converter.to_erlang(value)}
   def dump_date(value) when is_tuple(value) do
     with {:ok, v} <- Timex.Ecto.DateTime.load(value), {:ok, d} <- Timex.format(v, "{ASN1:GeneralizedTime:Z}") do
       {:ok, Converter.to_erlang(d)}
@@ -51,14 +53,15 @@ defmodule Ldap.Ecto.Helper do
   def construct_scope(_), do: {:scope, :eldap.wholeSubtree}
 
   @doc false
-  def construct_attributes(%{select: select, sources: sources}) do
+  def construct_attributes(%{select: select}) do
     attrs =
       Enum.map(select.fields, fn(field) ->
         field
         |> extract_select
         |> Converter.to_erlang
       end)
-    { :attributes, attrs }
+
+    { :attributes, ['dn'] ++ attrs }
   end
 
   def process_entry({:eldap_entry, dn, attrs}) when is_list(attrs) do
@@ -68,8 +71,6 @@ defmodule Ldap.Ecto.Helper do
       {key |> to_string |> String.to_atom, value}
     end))
   end
-
-  def generate_models(row, process, [{_, _, fields}]), do: process.(row)
 
   def prune_attrs(attrs, all_fields) do
     for field <- all_fields, do: Keyword.get(attrs, field)
@@ -107,7 +108,6 @@ defmodule Ldap.Ecto.Helper do
       |> Keyword.get(:filter)
       |> replace_dn_filters
 
-    abx = 7
     {filter, dns |> List.flatten |> Enum.uniq}
   end
 

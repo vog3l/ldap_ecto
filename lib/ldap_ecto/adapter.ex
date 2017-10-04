@@ -66,15 +66,19 @@ defmodule Ldap.Ecto.Adapter do
   @behaviour Ecto.Adapter
 
   alias Ldap.Ecto
-  alias Ldap.Ecto.{Adapter, Helper, Converter}
-
+  alias Ldap.Ecto.{Helper, Converter}
 
   # Ecto.Adapter.__before_compile__/1
   # @spec __before_compile__(term, env :: Macro.Env.t) :: Macro.t # <- extra term in docs?
   # @spec __before_compile__(env :: Macro.Env.t) :: Macro.t
+  @impl true
   defmacro __before_compile__(env) do
-#    module = env.module
-#    config = Module.get_attribute(module, :config)
+  #  schema_meta =
+    module = env.module
+    config = Module.get_attribute(module, :schme_meta)
+  #  quote do
+      IO.inspect config
+  #  end
   end
 
 
@@ -84,8 +88,9 @@ defmodule Ldap.Ecto.Adapter do
         nil |
         no_return
 
+  @impl true
   def autogenerate(_field_type) do
-    nil
+#    ype = schema_meta.schema.__schema__(:type, attribute)
   end
 
 
@@ -93,6 +98,7 @@ defmodule Ldap.Ecto.Adapter do
   @spec child_spec(repo, options)
     :: :supervisor.child_spec
 
+  @impl true
   def child_spec(repo, options) do
     Supervisor.Spec.worker(Ldap.Ecto, [repo, options], name: Ldap.Ecto)
   end
@@ -103,6 +109,7 @@ defmodule Ldap.Ecto.Adapter do
     ::  {:ok, [atom]} |
         {:error, atom}
 
+  @impl true
   def ensure_all_started(_repo, _restart_type) do
     {:ok, []}
   end
@@ -113,6 +120,7 @@ defmodule Ldap.Ecto.Adapter do
     ::  {:cache, prepared} |
         {:nocache, prepared}
 
+  @impl true
   def prepare(:all, query) do
     prepared_query =
       [
@@ -140,6 +148,7 @@ defmodule Ldap.Ecto.Adapter do
         {:cached, (prepared -> :ok), cached} |
         {:cache, (cached -> :ok), prepared}
 
+  @impl true
   def execute(_repo, query_meta, {:nocache, prepared_query}, params, process, options) do
     options_filter =
       if Keyword.get(prepared_query, :filter) == [] do
@@ -166,7 +175,7 @@ defmodule Ldap.Ecto.Adapter do
         entry
         |> Helper.process_entry
         |> Helper.prune_attrs(fields)
-        |> Helper.generate_models(process, query_meta.select.preprocess)
+        |> process.()
       end
 
     {count, result_set}
@@ -179,8 +188,17 @@ defmodule Ldap.Ecto.Adapter do
         {:invalid, constraints} |
         no_return
 
-  def insert(_repo, _schema_meta, _fields, _on_conflict, _returning, _options) do
+  @impl true
+  def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
+    dn = Keyword.get(fields, :dn)
+    #attrs = Enum.map(fields, fn(k,v) -> {k, v} end)
 
+    case Ldap.Ecto.insert(dn, fields) do
+      :ok ->
+        {:ok, []}
+      {:error, reason} ->
+        {:invalid, [reason]}
+    end
   end
 
   # Ecto.Adapter.insert_all/7
@@ -188,6 +206,7 @@ defmodule Ldap.Ecto.Adapter do
     ::  {integer, [[term]] | nil} |
         no_return
 
+  @impl true
   def insert_all(_repo, _schema_meta, _header, _rows, _on_conflict, _returning, _options) do
 
   end
@@ -200,6 +219,7 @@ defmodule Ldap.Ecto.Adapter do
         {:error, :stale} |
         no_return
 
+  @impl true
   def update(_repo, schema_meta, fields, filters, _returning, _options) do
     dn = Keyword.get(filters, :dn)
 
@@ -225,6 +245,7 @@ defmodule Ldap.Ecto.Adapter do
         {:error, :stale} |
         no_return
 
+  @impl true
   def delete(_repo, _schema_meta, filters, _options) do
     dn = Keyword.get(filters, :dn)
 
@@ -241,6 +262,7 @@ defmodule Ldap.Ecto.Adapter do
   @spec loaders(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
     :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
 
+  @impl true
   def loaders(:id, type), do: [type]
   def loaders(:string, _type), do: [&Helper.load_string/1]
   def loaders(:binary, _type), do: [&Helper.load_string/1]
@@ -249,12 +271,13 @@ defmodule Ldap.Ecto.Adapter do
   def loaders({:array, :string}, _type), do: [&Helper.load_array/1]
   def loaders(_primitive, nil), do: [nil]
   def loaders(_primitive, type), do: [type]
-
+#  def loaders(:integer, _type), do: [&Helper.load_integer/1]
 
   # Ecto.Adapter.dumpers/2
   @spec dumpers(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
     :: [(term -> {:ok, term} | :error) | Ecto.Type.t]
 
+  @impl true
   def dumpers(_, nil), do: {:ok, nil}
   def dumpers({:in, _type}, {:in, _}), do: [&Helper.dump_in/1]
   def dumpers(:string, _type), do: [&Helper.dump_string/1]
@@ -262,5 +285,6 @@ defmodule Ldap.Ecto.Adapter do
   def dumpers(:datetime, _type), do: [&Helper.dump_date/1]
   def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
   def dumpers(_primitive, type), do: [type]
+#  def dumpers(:integer, _type), do: [&Helper.dump_integer/1]
 
 end
