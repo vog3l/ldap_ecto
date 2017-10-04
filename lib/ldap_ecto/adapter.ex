@@ -66,7 +66,7 @@ defmodule Ldap.Ecto.Adapter do
   @behaviour Ecto.Adapter
 
   alias Ldap.Ecto
-  alias Ldap.Ecto.{Helper, Converter}
+  alias Ldap.Ecto.{Helper, Convert}
 
   # Ecto.Adapter.__before_compile__/1
   # @spec __before_compile__(term, env :: Macro.Env.t) :: Macro.t # <- extra term in docs?
@@ -152,7 +152,7 @@ defmodule Ldap.Ecto.Adapter do
   def execute(_repo, query_meta, {:nocache, prepared_query}, params, process, options) do
     options_filter =
       if Keyword.get(prepared_query, :filter) == [] do
-        :eldap.and(Converter.options_to_filter(options))
+        :eldap.and(Convert.options_to_filter(options))
       else
         {:filter, filter} = Helper.construct_filter(Keyword.get(prepared_query, :filter), params)
         filter
