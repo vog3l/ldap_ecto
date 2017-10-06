@@ -1,4 +1,4 @@
-defmodule Ldap.Ecto.Convert do
+defmodule Ldap.Ecto.Converter do
 
   @spec from_erlang(any) :: any
   def from_erlang(list=[head|_]) when is_list(head), do: Enum.map(list, &from_erlang/1)

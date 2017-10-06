@@ -66,7 +66,7 @@ defmodule Ldap.Ecto.Adapter do
   @behaviour Ecto.Adapter
 
   alias Ldap.Ecto
-  alias Ldap.Ecto.{Helper, Convert}
+  alias Ldap.Ecto.{Constructer, Converter, Helper}
 
   # Ecto.Adapter.__before_compile__/1
   # @spec __before_compile__(term, env :: Macro.Env.t) :: Macro.t # <- extra term in docs?
@@ -89,9 +89,16 @@ defmodule Ldap.Ecto.Adapter do
         no_return
 
   @impl true
-  def autogenerate(_field_type) do
-#    ype = schema_meta.schema.__schema__(:type, attribute)
+  def autogenerate(_, :id) do
+     asd = 7
+     nil
   end
+  def autogenerate(:id) do
+     asd = 7
+     nil
+  end
+  def autogenerate(:embed_id),  do: Ecto.UUID.generate()
+  def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
 
 
   # Ecto.Adapter.child_spec/2
@@ -124,13 +131,14 @@ defmodule Ldap.Ecto.Adapter do
   def prepare(:all, query) do
     prepared_query =
       [
-        Helper.construct_filter(query),
-        Helper.construct_base(query),
-        Helper.construct_scope(query),
-        Helper.construct_attributes(query),
+        Constructer.get_filter(query),
+        Constructer.get_base(query),
+        Constructer.get_scope(query),
+        Constructer.get_attrs(query),
       ]
       |> Enum.filter(&(&1))
 
+      asd =7
     {:nocache, prepared_query}
   end
 
@@ -151,11 +159,11 @@ defmodule Ldap.Ecto.Adapter do
   @impl true
   def execute(_repo, query_meta, {:nocache, prepared_query}, params, process, options) do
     options_filter =
-      if Keyword.get(prepared_query, :filter) == [] do
-        :eldap.and(Convert.options_to_filter(options))
-      else
-        {:filter, filter} = Helper.construct_filter(Keyword.get(prepared_query, :filter), params)
+      if options == [] do
+        {:filter, filter} = Constructer.get_filter(Keyword.get(prepared_query, :filter), params)
         filter
+      else
+        :eldap.and(Converter.options_to_filter(options))
       end
 
     search_response =
@@ -167,7 +175,12 @@ defmodule Ldap.Ecto.Adapter do
 
     {:ok, {:eldap_search_result, results, []}} = search_response
 
-    fields = Helper.ordered_fields(query_meta.sources)
+#    fields = Helper.ordered_fields(query_meta.sources)
+
+    # this fields are ordered
+    {_, model} = elem(query_meta.sources, 0)
+    fields = model.__schema__(:fields)
+
     count = Helper.count_fields(query_meta.select.preprocess)
 
     result_set =
@@ -190,8 +203,15 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
-    dn = Keyword.get(fields, :dn)
-    #attrs = Enum.map(fields, fn(k,v) -> {k, v} end)
+    dn = Constructer.get_dn(schema_meta.schema)
+
+    fields =
+      Enum.map fields, fn {k,v} ->
+        case v do
+          [x, y]  -> {to_string(k),[to_string(x), to_string(y)]}
+          _    -> {to_string(k),to_string(v)}
+        end
+      end
 
     case Ldap.Ecto.insert(dn, fields) do
       :ok ->
@@ -200,6 +220,7 @@ defmodule Ldap.Ecto.Adapter do
         {:invalid, [reason]}
     end
   end
+
 
   # Ecto.Adapter.insert_all/7
   @spec insert_all(repo, schema_meta, header :: [atom], [fields], on_conflict, returning, options)
@@ -221,7 +242,7 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def update(_repo, schema_meta, fields, filters, _returning, _options) do
-    dn = Keyword.get(filters, :dn)
+    dn = Constructer.get_dn(schema_meta.schema)
 
     modify_operations =
       for {attribute, value} <- fields do
@@ -246,8 +267,8 @@ defmodule Ldap.Ecto.Adapter do
         no_return
 
   @impl true
-  def delete(_repo, _schema_meta, filters, _options) do
-    dn = Keyword.get(filters, :dn)
+  def delete(_repo, schema_meta, _filters, _options) do
+    dn = Constructer.get_dn(schema_meta.schema)
 
     case Ldap.Ecto.delete(dn) do
       :ok ->

@@ -1,11 +1,11 @@
 defmodule Ldap.Ecto.Helper do
 
-  alias Ldap.Ecto.Convert
+  alias Ldap.Ecto.Converter
 
-  def load_string(value), do: {:ok, trim_converted(Convert.from_erlang(value))}
-#  def load_integer(value), do: {:ok, trim_converted(Convert.from_erlang(value))}
+  def load_string(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
+#  def load_integer(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
   def load_array(array) do
-    hallo = Enum.map(array, Convert.from_erlang(array))
+    hallo = Enum.map(array, Converter.from_erlang(array))
     {:ok, hallo}
   end
   def load_date(value) do
@@ -15,53 +15,14 @@ defmodule Ldap.Ecto.Helper do
     |> Timex.Ecto.DateTime.dump
   end
 
-  def dump_in(value), do: {:ok, {:in, Convert.to_erlang(value)}}
-#  def dump_integer(value), do: {:ok, Convert.to_erlang(value)}
-  def dump_string(value), do: {:ok, Convert.to_erlang(value)}
-  def dump_array(value) when is_list(value), do: {:ok, Convert.to_erlang(value)}
+  def dump_in(value), do: {:ok, {:in, Converter.to_erlang(value)}}
+#  def dump_integer(value), do: {:ok, Converter.to_erlang(value)}
+  def dump_string(value), do: {:ok, Converter.to_erlang(value)}
+  def dump_array(value) when is_list(value), do: {:ok, Converter.to_erlang(value)}
   def dump_date(value) when is_tuple(value) do
     with {:ok, v} <- Timex.Ecto.DateTime.load(value), {:ok, d} <- Timex.format(v, "{ASN1:GeneralizedTime:Z}") do
-      {:ok, Convert.to_erlang(d)}
+      {:ok, Converter.to_erlang(d)}
     end
-  end
-
-  @doc false
-  def construct_filter(%{wheres: wheres}) when is_list(wheres) do
-    filter_term =
-      wheres
-      |> Enum.map(&Map.get(&1, :expr))
-    {:filter, filter_term}
-  end
-
-  @doc false
-  def construct_filter(wheres, params) when is_list(wheres) do
-    filter_term =
-      wheres
-      |> Enum.map(&(Convert.ecto_lisp_to_eldap_filter(&1, params)))
-      |> :eldap.and
-    {:filter, filter_term}
-  end
-
-  @doc false
-  def construct_base(%{from: {from, _}}) do
-    {:base, to_char_list(from <> "," <> to_string(Ldap.Ecto.base)) }
-  end
-  @doc false
-  def constuct_base(_), do: {:base, Ldap.Ecto.base}
-
-  @doc false
-  def construct_scope(_), do: {:scope, :eldap.wholeSubtree}
-
-  @doc false
-  def construct_attributes(%{select: select}) do
-    attrs =
-      Enum.map(select.fields, fn(field) ->
-        field
-        |> extract_select
-        |> Convert.to_erlang
-      end)
-
-    { :attributes, ['dn'] ++ attrs }
   end
 
   def process_entry({:eldap_entry, dn, attrs}) when is_list(attrs) do
@@ -74,11 +35,6 @@ defmodule Ldap.Ecto.Helper do
 
   def prune_attrs(attrs, all_fields) do
     for field <- all_fields, do: Keyword.get(attrs, field)
-  end
-
-  def ordered_fields(sources) do
-    {_, model} = elem(sources, 0)
-    model.__schema__(:fields)
   end
 
   def count_fields(fields) when is_list(fields), do: fields |> Enum.map(fn field -> count_fields(field) end)
@@ -128,18 +84,16 @@ defmodule Ldap.Ecto.Helper do
 
 
   def generate_modify_operation(attr, nil, _) do
-    :eldap.mod_replace(Convert.to_erlang(attr), [])
+    :eldap.mod_replace(Converter.to_erlang(attr), [])
   end
   def generate_modify_operation(attr, [], {:array, _}) do
-    :eldap.mod_replace(Convert.to_erlang(attr), [])
+    :eldap.mod_replace(Converter.to_erlang(attr), [])
   end
   def generate_modify_operation(attr, value, {:array, _}) do
-    :eldap.mod_replace(Convert.to_erlang(attr), value)
+    :eldap.mod_replace(Converter.to_erlang(attr), value)
   end
   def generate_modify_operation(attr, value, _) do
-    :eldap.mod_replace(Convert.to_erlang(attr), [value])
+    :eldap.mod_replace(Converter.to_erlang(attr), [value])
   end
-
-  defp extract_select({{_, _, [{:&, _, _}, select]}, _, _}), do: select
 
 end

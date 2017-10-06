@@ -40,7 +40,7 @@ defmodule Ldap.Ecto do
 
   def handle_call(:base, _from, opts) do
     base = Keyword.get(opts, :base) |> to_char_list
-    {:reply, base, opts}
+    {:reply, base, opts}  # really also the options ???
   end
 
   def handle_call({:search, search_options}, _from, opts) do
@@ -75,11 +75,6 @@ defmodule Ldap.Ecto do
     {:reply, delete_response, opts}
   end
 
-  ####
-  # Private
-  ##
-
-  @spec ldap_connect([{atom, any}]) :: {:ok, pid}
   defp ldap_connect(opts) do
     user_dn   = Keyword.get(opts, :user_dn)  |> to_char_list
     password  = Keyword.get(opts, :password) |> to_char_list
@@ -90,6 +85,10 @@ defmodule Ldap.Ecto do
     {:ok, handle} = :eldap.open([hostname], [{:port, port}, {:ssl, use_ssl}])
     :eldap.simple_bind(handle, user_dn, password)
     {:ok, handle}
+  end
+
+  def disconnect() do
+
   end
 
 end
