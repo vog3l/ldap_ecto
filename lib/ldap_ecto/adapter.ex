@@ -89,14 +89,7 @@ defmodule Ldap.Ecto.Adapter do
         no_return
 
   @impl true
-  def autogenerate(_, :id) do
-     asd = 7
-     nil
-  end
-  def autogenerate(:id) do
-     asd = 7
-     nil
-  end
+  def autogenerate(:id), do: nil
   def autogenerate(:embed_id),  do: Ecto.UUID.generate()
   def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
 
@@ -104,7 +97,6 @@ defmodule Ldap.Ecto.Adapter do
   # Ecto.Adapter.child_spec/2
   @spec child_spec(repo, options)
     :: :supervisor.child_spec
-
   @impl true
   def child_spec(repo, options) do
     Supervisor.Spec.worker(Ldap.Ecto, [repo, options], name: Ldap.Ecto)
@@ -115,7 +107,6 @@ defmodule Ldap.Ecto.Adapter do
   @spec ensure_all_started(repo, type :: :application.restart_type)
     ::  {:ok, [atom]} |
         {:error, atom}
-
   @impl true
   def ensure_all_started(_repo, _restart_type) do
     {:ok, []}
@@ -126,7 +117,6 @@ defmodule Ldap.Ecto.Adapter do
   @spec prepare(atom :: :all | :update_all | :delete_all, query :: Ecto.Query.t)
     ::  {:cache, prepared} |
         {:nocache, prepared}
-
   @impl true
   def prepare(:all, query) do
     prepared_query =
@@ -138,12 +128,10 @@ defmodule Ldap.Ecto.Adapter do
       ]
       |> Enum.filter(&(&1))
 
-      asd =7
     {:nocache, prepared_query}
   end
-
-  def prepare(:update_all, query), do: raise "Update is currently unsupported"
-  def prepare(:delete_all, query), do: raise "Delete is currently unsupported"
+  def prepare(:update_all, query), do: raise "Update all is currently unsupported"
+  def prepare(:delete_all, query), do: raise "Delete all is currently unsupported"
 
 
   # Ecto.Adapter.execute/6
@@ -155,20 +143,23 @@ defmodule Ldap.Ecto.Adapter do
         {:nocache, prepared} |
         {:cached, (prepared -> :ok), cached} |
         {:cache, (cached -> :ok), prepared}
-
   @impl true
   def execute(_repo, query_meta, {:nocache, prepared_query}, params, process, options) do
-    options_filter =
+    filter =
       if options == [] do
-        {:filter, filter} = Constructer.get_filter(Keyword.get(prepared_query, :filter), params)
-        filter
+        if Keyword.get(prepared_query, :filter) == [] do
+          "*"
+        else
+          {:filter, filter} = Constructer.get_filter(Keyword.get(prepared_query, :filter), params)
+          filter
+        end
       else
         :eldap.and(Converter.options_to_filter(options))
       end
 
     search_response =
       prepared_query
-      |> Keyword.put(:filter, options_filter)
+      |> Keyword.put(:filter, filter)
       |> Helper.replace_dn_search_with_objectclass_present
       |> Helper.merge_search_options(prepared_query)
       |> Ldap.Ecto.search
@@ -200,7 +191,6 @@ defmodule Ldap.Ecto.Adapter do
     ::  {:ok, fields} |
         {:invalid, constraints} |
         no_return
-
   @impl true
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
     dn = Constructer.get_dn(schema_meta.schema)

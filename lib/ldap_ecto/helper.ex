@@ -4,10 +4,7 @@ defmodule Ldap.Ecto.Helper do
 
   def load_string(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
 #  def load_integer(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
-  def load_array(array) do
-    hallo = Enum.map(array, Converter.from_erlang(array))
-    {:ok, hallo}
-  end
+  def load_array(array), do: {:ok, Enum.map(array, fn x -> trim_converted(Converter.from_erlang(x)) end)}
   def load_date(value) do
     value
     |> to_string
@@ -40,6 +37,7 @@ defmodule Ldap.Ecto.Helper do
   def count_fields(fields) when is_list(fields), do: fields |> Enum.map(fn field -> count_fields(field) end)
   def count_fields({_, _, fields}), do: Enum.count(fields)
 
+  # do i really need it ???
   @spec trim_converted(any) :: any
   def trim_converted(list) when is_list(list), do: hd(list)
   def trim_converted(list), do: list
