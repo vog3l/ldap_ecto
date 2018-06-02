@@ -1,7 +1,7 @@
 defmodule Ldap.Ecto.Constructer do
 
   alias Ldap.Ecto.Converter
-  
+
   @doc false
   def get_dn(model) do
     primary_keys = model.__schema__(:primary_key)
@@ -39,7 +39,7 @@ defmodule Ldap.Ecto.Constructer do
 
   @doc false
   def get_base(%{from: {from, _}}) do
-    {:base, to_char_list(from <> "," <> to_string(Ldap.Ecto.base)) }
+    {:base, to_charlist(from <> "," <> to_string(Ldap.Ecto.base)) }
   end
   @doc false
 #  def get_base(_), do: {:base, Ldap.Ecto.base}

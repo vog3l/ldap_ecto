@@ -94,7 +94,7 @@ defmodule Ldap.Ecto.Converter do
   def translate_value(atom) when is_atom(atom) do
     atom
     |> to_string
-    |> to_char_list
+    |> to_charlist
   end
   def translate_value(other), do: to_erlang(other)
 

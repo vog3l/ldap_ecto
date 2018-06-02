@@ -39,7 +39,7 @@ defmodule Ldap.Ecto do
   ##
 
   def handle_call(:base, _from, opts) do
-    base = Keyword.get(opts, :base) |> to_char_list
+    base = Keyword.get(opts, :base) |> to_charlist
     {:reply, base, opts}  # really also the options ???
   end
 
@@ -76,9 +76,9 @@ defmodule Ldap.Ecto do
   end
 
   defp ldap_connect(opts) do
-    user_dn   = Keyword.get(opts, :user_dn)  |> to_char_list
-    password  = Keyword.get(opts, :password) |> to_char_list
-    hostname  = Keyword.get(opts, :hostname) |> to_char_list
+    user_dn   = Keyword.get(opts, :user_dn)  |> to_charlist
+    password  = Keyword.get(opts, :password) |> to_charlist
+    hostname  = Keyword.get(opts, :hostname) |> to_charlist
     port      = Keyword.get(opts, :port, 636)
     use_ssl   = Keyword.get(opts, :ssl, true)
 

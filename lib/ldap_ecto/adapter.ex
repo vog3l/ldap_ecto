@@ -232,8 +232,7 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def update(_repo, schema_meta, fields, filters, _returning, _options) do
-  #  dn = Constructer.get_dn(schema_meta.schema)
-    dn = Enum.at(filters, 0)[:dn]
+    dn = Keyword.get(filters, :dn)
 
     modify_operations =
       for {attribute, value} <- fields do
@@ -258,9 +257,10 @@ defmodule Ldap.Ecto.Adapter do
         no_return
 
   @impl true
-  def delete(_repo, schema_meta, _filters, _options) do
-    dn = Constructer.get_dn(schema_meta.schema)
-
+  def delete(_repo, _schema_meta, filters, _options) do
+#    dn = Constructer.get_dn(schema_meta.schema)
+    dn = Keyword.get(filters, :dn)
+    
     case Ldap.Ecto.delete(dn) do
       :ok ->
         {:ok, []}
