@@ -8,11 +8,7 @@ defmodule Ldap.Ecto.Converter do
   def from_erlang(other), do: other
 
   @spec to_erlang(list | String.t | atom | number) :: list | number
-  def to_erlang(list) when is_list(list) do
-     asd = 0
-     
-     Enum.map(list, &to_erlang/1)
-  end
+  def to_erlang(list) when is_list(list), do: Enum.map(list, &to_erlang/1)
   def to_erlang(string) when is_binary(string), do: :binary.bin_to_list(string)
   def to_erlang(atom) when is_atom(atom), do: atom |> Atom.to_string |> to_erlang
   def to_erlang(num) when is_number(num), do: num

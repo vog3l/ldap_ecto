@@ -195,13 +195,13 @@ defmodule Ldap.Ecto.Adapter do
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
     dn = Constructer.get_dn(schema_meta.schema, fields)
 
-#    fields =
-#      Enum.map fields, fn {k,v} ->
-#        case v do
-#          [x, y]  -> {to_string(k),[to_string(x), to_string(y)]}
-#          _    -> {to_string(k),to_string(v)}
-#        end
-#      end
+    fields =
+      Enum.map fields, fn {k,v} ->
+        case is_list(v) do
+          true  -> Enum.each v, fn(x) -> {to_string(k),to_string(v)} end
+          _    -> {to_string(k),to_string(v)}
+        end
+      end
 
     case Ldap.Ecto.insert(dn, fields) do
       :ok ->
@@ -291,15 +291,8 @@ defmodule Ldap.Ecto.Adapter do
   @impl true
   def dumpers(_, nil), do: {:ok, nil}
   def dumpers({:in, _type}, {:in, _}), do: [&Helper.dump_in/1]
-  def dumpers(:string, _type) do
-    asd = 0
-
-    [&Helper.dump_string/1]
-  end
-  def dumpers({:array, :string}, _type) do
-    [&Helper.dump_array/1]
-  #  &(Enum.each(&1, fn(x) -> Helper.dump_string(x) end))
-  end
+  def dumpers(:string, _type), do: [&Helper.dump_string/1]
+  def dumpers({:array, :string}, _type), do [&Helper.dump_array/1]
   def dumpers(:datetime, _type), do: [&Helper.dump_date/1]
   def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
   def dumpers(_primitive, type), do: [type]
