@@ -293,9 +293,9 @@ defmodule Ldap.Ecto.Adapter do
   def dumpers({:in, _type}, {:in, _}), do: [&Helper.dump_in/1]
   def dumpers(:string, _type), do: [&Helper.dump_string/1]
   def dumpers({:array, :string}, _type) do
-    Enum.each( fn(x) ->
-      [&Helper.dump_string/1]
-    end)
+    &(Enum.each(&1, fn(x) ->
+      Helper.dump_string(x)
+    end))
   end
   def dumpers(:datetime, _type), do: [&Helper.dump_date/1]
   def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
