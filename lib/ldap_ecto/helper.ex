@@ -16,9 +16,9 @@ defmodule Ldap.Ecto.Helper do
 #  def dump_integer(value), do: {:ok, Converter.to_erlang(value)}
   def dump_string(value), do: {:ok, Converter.to_erlang(value)}
   def dump_array(value) when is_list(value) do
-     Enum.each(value, fn(x) ->
-       {:ok, Converter.to_erlang(x)}
-     end)
+     {:ok, Enum.map(value, fn(x) ->
+       Converter.to_erlang(x)
+     end)}
   end
   def dump_date(value) when is_tuple(value) do
     with {:ok, v} <- Timex.Ecto.DateTime.load(value), {:ok, d} <- Timex.format(v, "{ASN1:GeneralizedTime:Z}") do
