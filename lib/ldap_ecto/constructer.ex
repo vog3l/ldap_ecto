@@ -3,10 +3,8 @@ defmodule Ldap.Ecto.Constructer do
   alias Ldap.Ecto.Converter
 
   @doc false
-  def get_dn(model) do
+  def get_dn(model, fields) do
     primary_keys = model.__schema__(:primary_key)
-    fields = model.__schema__(:fields)
-    filters = model.__schema__(:filters)
     schema = model.__schema__(:source)
 
     primary =

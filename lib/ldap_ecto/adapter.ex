@@ -193,7 +193,7 @@ defmodule Ldap.Ecto.Adapter do
         no_return
   @impl true
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
-    dn = Constructer.get_dn(schema_meta.schema)
+    dn = Constructer.get_dn(schema_meta.schema, fields)
 
     fields =
       Enum.map fields, fn {k,v} ->
@@ -258,7 +258,6 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def delete(_repo, _schema_meta, filters, _options) do
-#    dn = Constructer.get_dn(schema_meta.schema)
     dn = Keyword.get(filters, :dn)
 
     case Ldap.Ecto.delete(dn) do
