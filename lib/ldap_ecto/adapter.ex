@@ -195,13 +195,13 @@ defmodule Ldap.Ecto.Adapter do
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
     dn = Constructer.get_dn(schema_meta.schema, fields)
 
-    fields =
-      Enum.map fields, fn {k,v} ->
-        case v do
-          [x, y]  -> {to_string(k),[to_string(x), to_string(y)]}
-          _    -> {to_string(k),to_string(v)}
-        end
-      end
+#    fields =
+#      Enum.map fields, fn {k,v} ->
+#        case v do
+#          [x, y]  -> {to_string(k),[to_string(x), to_string(y)]}
+#          _    -> {to_string(k),to_string(v)}
+#        end
+#      end
 
     case Ldap.Ecto.insert(dn, fields) do
       :ok ->
@@ -232,7 +232,7 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def update(_repo, schema_meta, fields, filters, _returning, _options) do
-    dn = Keyword.get(filters, :dn)
+    dn = Constructer.get_dn(schema_meta.schema, filters)
 
     modify_operations =
       for {attribute, value} <- fields do
@@ -257,8 +257,8 @@ defmodule Ldap.Ecto.Adapter do
         no_return
 
   @impl true
-  def delete(_repo, _schema_meta, filters, _options) do
-    dn = Keyword.get(filters, :dn)
+  def delete(_repo, schema_meta, filters, _options) do
+    dn = Constructer.get_dn(schema_meta.schema, filters)
 
     case Ldap.Ecto.delete(dn) do
       :ok ->
