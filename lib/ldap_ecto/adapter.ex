@@ -90,8 +90,8 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def autogenerate(:id), do: nil
-  def autogenerate(:embed_id),  do: Ecto.UUID.generate()
-  def autogenerate(:binary_id), do: Ecto.UUID.bingenerate()
+  def autogenerate(:embed_id),  do: nil
+  def autogenerate(:binary_id), do: nil
 
 
   # Ecto.Adapter.child_spec/2
@@ -196,10 +196,10 @@ defmodule Ldap.Ecto.Adapter do
     dn = Constructer.get_dn(schema_meta.schema, fields)
 
     prepared_fields =
-      Enum.flat_map fields, fn({k, v}) ->
+      Enum.map fields, fn({k, v}) ->
         case v do
-          :objectClass  -> Enum.each v, fn(x) -> {to_string(k),to_string(v)} end
-          _ -> {to_string(k),to_string(v)}
+          :objectClass  -> Enum.each v, fn(x) -> [{to_string(k),to_string(x)}] end
+          _ -> [{to_string(k),to_string(v)}]
         end
       end
 
