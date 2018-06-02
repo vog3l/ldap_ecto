@@ -282,7 +282,7 @@ defmodule Ldap.Ecto.Adapter do
   def loaders({:array, :string}, _type), do: [&Helper.load_array/1]
   def loaders(_primitive, nil), do: [nil]
   def loaders(_primitive, type), do: [type]
-#  def loaders(:integer, _type), do: [&Helper.load_integer/1]
+  def loaders(:integer, _type), do: [&Helper.load_integer/1]
 
   # Ecto.Adapter.dumpers/2
   @spec dumpers(primitive_type :: Ecto.Type.primitive, ecto_type :: Ecto.Type.t)
@@ -296,6 +296,6 @@ defmodule Ldap.Ecto.Adapter do
   def dumpers(:datetime, _type), do: [&Helper.dump_date/1]
   def dumpers(Ecto.DateTime, _type), do: [&Helper.dump_date/1]
   def dumpers(_primitive, type), do: [type]
-#  def dumpers(:integer, _type), do: [&Helper.dump_integer/1]
+  def dumpers(:integer, _type), do: [&Helper.dump_integer/1]
 
 end

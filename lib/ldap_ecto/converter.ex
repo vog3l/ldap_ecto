@@ -2,7 +2,7 @@ defmodule Ldap.Ecto.Converter do
 
   @spec from_erlang(any) :: any
   def from_erlang(list=[head|_]) when is_list(head), do: Enum.map(list, &from_erlang/1)
-#  def from_erlang(list) when is_list(list), do: Enum.map(list, &from_erlang/1)
+  def from_erlang(list) when is_list(list), do: Enum.map(list, &from_erlang/1)
   def from_erlang(string) when is_list(string), do: :binary.list_to_bin(string)
   def from_erlang(num) when is_number(num), do: num
   def from_erlang(other), do: other
