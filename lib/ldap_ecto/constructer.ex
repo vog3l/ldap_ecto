@@ -6,6 +6,7 @@ defmodule Ldap.Ecto.Constructer do
   def get_dn(model) do
     primary_keys = model.__schema__(:primary_key)
     fields = model.__schema__(:fields)
+    filters = model.__schema__(:filters)
     schema = model.__schema__(:source)
 
     primary =
