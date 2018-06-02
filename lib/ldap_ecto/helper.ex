@@ -3,7 +3,7 @@ defmodule Ldap.Ecto.Helper do
   alias Ldap.Ecto.Converter
 
   def load_string(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
-#  def load_integer(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
+  def load_integer(value), do: {:ok, trim_converted(Converter.from_erlang(value))}
   def load_array(array), do: {:ok, Enum.map(array, fn x -> trim_converted(Converter.from_erlang(x)) end)}
   def load_date(value) do
     value
@@ -13,7 +13,7 @@ defmodule Ldap.Ecto.Helper do
   end
 
   def dump_in(value), do: {:ok, {:in, Converter.to_erlang(value)}}
-#  def dump_integer(value), do: {:ok, Converter.to_erlang(value)}
+  def dump_integer(value), do: {:ok, Converter.to_erlang(value)}
   def dump_string(value), do: {:ok, Converter.to_erlang(value)}
   def dump_array(value) when is_list(value), do: {:ok, Converter.to_erlang(value)}
   def dump_date(value) when is_tuple(value) do
