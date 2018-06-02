@@ -13,7 +13,6 @@ defmodule Ldap.Ecto.Structure do
         {:error, term}
 
   def structure_dump(_default, _config) do
-    asd = 0
 
   end
 

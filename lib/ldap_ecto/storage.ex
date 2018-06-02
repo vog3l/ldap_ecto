@@ -13,9 +13,7 @@ defmodule Ldap.Ecto.Storage do
       {:error, :already_down} |
       {:error, term}
 
-  def storage_down(_options) do
-
-  end
+  def storage_up(_), do: {:error, :already_up}
 
   # Ecto.Adapter.Storage.storage_up/1
   @spec storage_up(options :: Keyword.t)
@@ -23,8 +21,6 @@ defmodule Ldap.Ecto.Storage do
         {:error, :already_up} |
         {:error, term}
 
-  def storage_up(_options) do
+  def storage_down(_), do: {:error, :already_down}
 
-  end
-  
 end

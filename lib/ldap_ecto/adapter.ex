@@ -166,8 +166,6 @@ defmodule Ldap.Ecto.Adapter do
 
     {:ok, {:eldap_search_result, results, []}} = search_response
 
-#    fields = Helper.ordered_fields(query_meta.sources)
-
     # this fields are ordered
     {_, model} = elem(query_meta.sources, 0)
     fields = model.__schema__(:fields)
@@ -195,16 +193,15 @@ defmodule Ldap.Ecto.Adapter do
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
     dn = Constructer.get_dn(schema_meta.schema, fields)
 
-    prepared_fields =
-      Enum.map fields, fn({k, v}) ->
-        case v do
-          :objectClass  -> Enum.each v, fn(x) -> [{to_string(k),to_string(x)}] end
-          _ -> [{to_string(k),to_string(v)}]
-        end
-      end
+#    prepared_fields =
+#      List.flatten(Enum.map fields, fn({k, v}) ->
+#        case v do
+#          :objectClass  -> Enum.map v, fn(x) -> [{to_string(k),to_string(x)}] end
+#          _ -> [{to_string(k),to_string(v)}]
+#        end
+#      end)
 
-
-    case Ldap.Ecto.insert(dn, prepared_fields) do
+    case Ldap.Ecto.insert(dn, fields) do
       :ok ->
         {:ok, []}
       {:error, reason} ->
