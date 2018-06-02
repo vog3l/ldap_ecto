@@ -16,7 +16,12 @@ defmodule Ldap.Ecto.Helper do
 #  def dump_integer(value), do: {:ok, Converter.to_erlang(value)}
   def dump_string(value), do: {:ok, Converter.to_erlang(value)}
   def dump_array(value) when is_list(value) do
-      Enum.map(value, fn(x) ->
+      Enum.each(value, fn(x) ->
+       {:ok, Converter.to_erlang(x)}
+      end)
+  end
+  def dump_array(key, value) when is_list(value) do
+      Enum.each(value, fn(x) ->
        {:ok, Converter.to_erlang(x)}
       end)
   end
