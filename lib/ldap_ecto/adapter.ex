@@ -232,7 +232,8 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def update(_repo, schema_meta, fields, filters, _returning, _options) do
-    dn = Constructer.get_dn(schema_meta.schema)
+  #  dn = Constructer.get_dn(schema_meta.schema)
+    dn = Enum.at(filters, 0)[:dn]
 
     modify_operations =
       for {attribute, value} <- fields do
