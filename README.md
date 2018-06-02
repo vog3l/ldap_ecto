@@ -1,20 +1,93 @@
-# Ldap.Ecto
+# LdapEcto
 
-**TODO: Add description**
+**Ecto Adapter for LDAP**
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ldap_ecto` to your list of dependencies in `mix.exs`:
+[From GitHub](https://github.com/vog3l/ldap_ecto), the package can be installed as follows:
 
+  1. Add `ldap_ecto` to your list of dependencies in `mix.exs`:
 ```elixir
-def deps do
-  [
-    {:ldap_ecto, "~> 0.1.0"}
-  ]
-end
+        def deps do
+          [
+            {:ldap_ecto, git: "http://github.com:vog3l/ldap_ecto.git", tag: "0.2"},
+          ]
+        end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/ldap_ecto](https://hexdocs.pm/ldap_ecto).
+  2. Specify `Ldap.Ecto.Adapter` as the adapter for your application's Repo:
+```elixir
+    config :my_app, MyApp.Repo,
+      adapter: Ldap.Ecto.Adapter,
+      hostname: "ldap.example.com",
+      base: "dc=example,dc=com",
+      port: 636,
+      ssl: true,
+      user_dn: "uid=sample_user,ou=users,dc=example,dc=com",
+      password: "password",
+      pool_size: 1
+```
+
+## Usage
+
+Use the `ldap_ecto` adapter, almost as you would any other Ecto backend.
+
+### Example Schema
+
+
+```elixir
+        defmodule User do
+          use Ecto.Schema
+          import Ecto.Changeset
+
+          @primary_key {:uid, :string, autogenerate: false}
+          schema "ou=users" do
+            field :dn, :string  # mandatory
+            field :objectClass, {:array, :string}, default: ["top", "person", "organizationalperson", "inetorgperson"]
+            field :mail, :string
+            field :alias, {:array, :string}
+            field :sn, :string
+            field :cn, :string
+          end
+
+          @doc false
+          def changeset(%User{} = user, attrs) do
+            user
+            |> cast(attrs, [:dn, :uid, :mail, :alias, :cn, :sn, :objectClass])
+            |> unique_constraint(:dn)
+            |> unique_constraint(:uid)
+            |> unique_constraint(:mail)
+            |> validate_required([:dn, :uid, :objectClass])
+          end
+
+          @doc false
+          def create_changeset(%User{} = user, attrs) do
+            user
+            |> cast(attrs, [:uid, :mail, :alias, :cn, :sn, :objectClass])
+            |> unique_constraint(:uid)
+            |> unique_constraint(:mail)
+            |> validate_required([:uid, :objectClass])
+          end
+
+        end
+```
+
+### Example Queries
+
+```elixir
+        Repo.get User, "uid=test,ou=users,dc=example,dc=com"
+
+        Repo.get_by User, uid: "test"
+
+        Repo.all User, st: "OR"
+
+        Repo.insert User
+
+        Repo.update User
+
+        Repo.delete User
+
+        Ecto.Query.from(u in User, where: like(u.mail, "%@example.com"))
+
+        Ecto.Query.from(u in User, where: "inetOrgPerson" in u.objectClass and not is_nil(u.mail), select: u.uid)
+```

@@ -193,9 +193,14 @@ defmodule Ldap.Ecto.Adapter do
   def insert(_repo, schema_meta, fields, _on_conflict, _returning, _options) do
     dn = Constructer.get_dn(schema_meta.schema, fields)
 
+    field_type = schema_meta.schema.__schema__(:types)
+
     prepared =
       Enum.map fields, fn({k, v}) ->
-        {to_charlist(k),[to_charlist(v)]}
+        case field_type[k] do
+          {:array, _} -> {to_charlist(k),to_charlist(v)}
+          _ -> {to_charlist(k),[to_charlist(v)]}
+        end
       end
 
     case Ldap.Ecto.insert(dn, prepared) do
