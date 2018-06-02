@@ -258,11 +258,8 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def delete(_repo, schema_meta, filters, _options) do
-    dn1 = Constructer.get_dn(schema_meta.schema, filters)
-    dn2 = Keyword.get(filters, :dn)
+    dn = Constructer.get_dn(schema_meta.schema, filters)
 
-    dn = dn2
-    
     case Ldap.Ecto.delete(dn) do
       :ok ->
         {:ok, []}
