@@ -42,6 +42,7 @@ On creation of a new entry the dn is derived from the primary_key, the schema an
           use Ecto.Schema
           import Ecto.Changeset
 
+          @derive {Phoenix.Param, key: :uid}
           @primary_key {:uid, :string, autogenerate: false}
           schema "ou=users" do
             field :dn, :string  # mandatory
