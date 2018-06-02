@@ -31,6 +31,8 @@
 ## Usage
 
 Use the `ldap_ecto` adapter, almost as you would any other Ecto backend.
+You have to specify the primary_key and dn field. The primary_key can be any available attribute.
+On creation of a new entry the dn is derived from the primary_key, the schema and the base_dn.
 
 ### Example Schema
 
@@ -43,7 +45,7 @@ Use the `ldap_ecto` adapter, almost as you would any other Ecto backend.
           @primary_key {:uid, :string, autogenerate: false}
           schema "ou=users" do
             field :dn, :string  # mandatory
-            field :objectClass, {:array, :string}, default: ["top", "person", "organizationalperson", "inetorgperson"]
+            field :objectClass, {:array, :string}, default: ["top", "person", "inetorgperson"]
             field :mail, :string
             field :alias, {:array, :string}
             field :sn, :string
@@ -75,9 +77,9 @@ Use the `ldap_ecto` adapter, almost as you would any other Ecto backend.
 ### Example Queries
 
 ```elixir
-        Repo.get User, "uid=test,ou=users,dc=example,dc=com"
+        Repo.get User, "testuser"
 
-        Repo.get_by User, uid: "test"
+        Repo.get_by User, mail: "testuser@example.com"
 
         Repo.all User, st: "OR"
 
