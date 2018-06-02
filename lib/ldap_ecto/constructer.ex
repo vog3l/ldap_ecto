@@ -36,7 +36,7 @@ defmodule Ldap.Ecto.Constructer do
 #  def get_base(_), do: {:base, Ldap.Ecto.base}
 
   @doc false
-  def get_scope(_), do: {:scope, :eldap.wholeSubtree}
+  def get_scope(_), do: {:scope, :eldap.singleLevel}
 
   @doc false
   def get_attrs(%{select: select}) do
