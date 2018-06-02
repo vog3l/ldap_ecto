@@ -258,7 +258,9 @@ defmodule Ldap.Ecto.Adapter do
 
   @impl true
   def delete(_repo, schema_meta, filters, _options) do
-    dn = Constructer.get_dn(schema_meta.schema, filters)
+    dntmp1 = Constructer.get_dn(schema_meta.schema, filters)
+    dntmp2 = String.chunk(dntmp1, :valid)
+    dn = Enum.at(dntmp2, 0)
 
     case Ldap.Ecto.delete(dn) do
       :ok ->

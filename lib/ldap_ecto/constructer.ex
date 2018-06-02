@@ -8,7 +8,7 @@ defmodule Ldap.Ecto.Constructer do
     primary_value = Keyword.get(fields, primary_key)
     schema = model.__schema__(:source)
 
-    Enum.at(String.chunk(to_string(primary_key) <> "=" <> to_string(primary_value) <> "," <> to_string(schema) <> "," <> to_string(Ldap.Ecto.base), :valid), 0)
+    to_string(primary_key) <> "=" <> to_string(primary_value) <> "," <> to_string(schema) <> "," <> to_string(Ldap.Ecto.base)
   end
 
   @doc false
