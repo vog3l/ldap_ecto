@@ -4,19 +4,11 @@ defmodule Ldap.Ecto.Constructer do
 
   @doc false
   def get_dn(model, fields) do
-    primary_keys = model.__schema__(:primary_key)
+    primary_key = Enum.at(model.__schema__(:primary_key),0)
+    primary_value = Keyword.get(fields, primary_key)
     schema = model.__schema__(:source)
 
-    primary =
-      Enum.filter(fields, fn {k,v} ->
-         Enum.each(primary_keys, fn x ->
-           x == k
-         end)
-      end)
-
-    {key, value} = Enum.at(primary, 0)
-
-    to_string(key) <> "=" <> to_string(value) <> "," <> to_string(schema) <> "," <> to_string(Ldap.Ecto.base)
+    to_string(primary_key) <> "=" <> to_string(primary_value) <> "," <> to_string(schema) <> "," <> to_string(Ldap.Ecto.base)
   end
 
   @doc false
