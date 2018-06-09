@@ -2,6 +2,10 @@
 
 **Ecto Adapter for LDAP**
 
+Supporting create, update, delete and search (CRUD).
+
+Migrations or Constraints are not working yet.
+
 ## Installation
 
 [From GitHub](https://github.com/vog3l/ldap_ecto), the package can be installed as follows:
@@ -56,11 +60,10 @@ On creation of a new entry the dn is derived from the primary_key, the schema an
           @doc false
           def changeset(%User{} = user, attrs) do
             user
-            |> cast(attrs, [:dn, :uid, :mail, :alias, :cn, :sn, :objectClass])
-            |> unique_constraint(:dn)
+            |> cast(attrs, [:uid, :mail, :alias, :cn, :sn, :objectClass])
             |> unique_constraint(:uid)
             |> unique_constraint(:mail)
-            |> validate_required([:dn, :uid, :objectClass])
+            |> validate_required([:uid, :objectClass])
           end
 
           @doc false
@@ -72,6 +75,39 @@ On creation of a new entry the dn is derived from the primary_key, the schema an
             |> validate_required([:uid, :objectClass])
           end
 
+        end
+```
+
+```elixir
+        defmodule Group do
+          use Ecto.Schema
+          import Ecto.Changeset
+
+          @derive {Phoenix.Param, key: :cn}
+          @primary_key {:cn, :string, autogenerate: false}
+          schema "ou=groups" do
+            field :dn, :string
+            field :objectClass, {:array, :string}, default: ["top", "groupofuniquenames"]
+            field :ou, :string
+            field :description, :string
+            field :uniqueMember, {:array, :string}
+          end
+
+          @doc false
+          def changeset(%Group{} = group, attrs) do
+            group
+            |> cast(attrs, [:cn, :ou, :description, :uniqueMember, :objectClass])
+            |> unique_constraint(:cn)
+            |> validate_required([:cn, :objectClass])
+          end
+
+          @doc false
+          def create_changeset(%Group{} = group, attrs) do
+            group
+            |> cast(attrs, [:cn, :ou, :description, :uniqueMember, :objectClass])
+            |> unique_constraint(:cn)
+            |> validate_required([:cn, :objectClass])
+          end
         end
 ```
 

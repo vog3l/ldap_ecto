@@ -44,5 +44,5 @@ defmodule Ldap.Ecto.Migration do
   def supports_ddl_transaction? do
 
   end
-  
+
 end
