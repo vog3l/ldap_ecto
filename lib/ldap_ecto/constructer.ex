@@ -32,11 +32,16 @@ defmodule Ldap.Ecto.Constructer do
   def get_base(%{from: {from, _}}) do
     {:base, to_charlist(from <> "," <> to_string(Ldap.Ecto.base)) }
   end
-  @doc false
-#  def get_base(_), do: {:base, Ldap.Ecto.base}
 
   @doc false
-  def get_scope(_), do: {:scope, :eldap.singleLevel}
+  def get_scope(_) do
+    case to_string(Ldap.Ecto.scope) do
+      "baseObject" -> {:scope, :eldap.baseObject}
+      "singleLevel" -> {:scope, :eldap.singleLevel}
+      "wholeSubtree" -> {:scope, :eldap.wholeSubtree}
+      _ -> {:scope, :eldap.singleLevel}
+    end
+  end
 
   @doc false
   def get_attrs(%{select: select}) do

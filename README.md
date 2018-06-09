@@ -29,6 +29,8 @@ Migrations or Constraints are not working yet.
       ssl: true,
       user_dn: "uid=sample_user,ou=users,dc=example,dc=com",
       password: "password",
+      # search scope: [ "baseObject", "singleLevel", "wholeSubtree" ]
+      scope: "singleLevel",
       pool_size: 1
 ```
 
