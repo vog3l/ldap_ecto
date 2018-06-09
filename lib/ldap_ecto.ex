@@ -15,6 +15,11 @@ defmodule Ldap.Ecto do
   end
 
   @doc false
+  def scope do
+    GenServer.call(__MODULE__, :scope)
+  end
+
+  @doc false
   def search(search_options) do
     GenServer.call(__MODULE__, {:search, search_options})
   end
@@ -41,6 +46,11 @@ defmodule Ldap.Ecto do
   def handle_call(:base, _from, opts) do
     base = Keyword.get(opts, :base) |> to_charlist
     {:reply, base, opts}  # really also the options ???
+  end
+
+  def handle_call(:scope, _from, opts) do
+    scope = Keyword.get(opts, :scope) |> to_charlist
+    {:reply, scope, opts}  # really also the options ???
   end
 
   def handle_call({:search, search_options}, _from, opts) do
